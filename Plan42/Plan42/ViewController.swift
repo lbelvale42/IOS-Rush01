@@ -25,43 +25,43 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
     var transportType: MKDirectionsTransportType?
     var steps: [MKRouteStep] = []
     
-    @IBAction func searchDestination(sender: UIButton) {
-        if let dest = destinationTextField.text where dest != "" {
+    @IBAction func searchDestination(_ sender: UIButton) {
+        if let dest = destinationTextField.text, dest != "" {
             print("Get destination location")
             getLocation(fromString: dest, isDestination: true, zoom: true)
-            segmentedBar.hidden = false
+            segmentedBar.isHidden = false
             resetItinerary()
         }
     }
     
-    @IBAction func handleDestinationTextField(sender: UITextField) {
-        if !segmentedBar.hidden {
-            segmentedBar.hidden = true
+    @IBAction func handleDestinationTextField(_ sender: UITextField) {
+        if !segmentedBar.isHidden {
+            segmentedBar.isHidden = true
         }
-        if !distanceLabel.hidden {
-            distanceLabel.hidden = true
+        if !distanceLabel.isHidden {
+            distanceLabel.isHidden = true
         }
-        if !timeLabel.hidden {
-            timeLabel.hidden = true
+        if !timeLabel.isHidden {
+            timeLabel.isHidden = true
         }
-        if !stepsButton.hidden {
-            stepsButton.hidden = true
+        if !stepsButton.isHidden {
+            stepsButton.isHidden = true
         }
     }
     
-    @IBAction func locateMe(sender: UIButton) {
+    @IBAction func locateMe(_ sender: UIButton) {
         print("locateMe")
         if let coordinates = locationManager.location?.coordinate {
             zoomToRegion(coordinates)
         }
     }
 
-    @IBAction func drawItinerary(sender: UISegmentedControl) {
+    @IBAction func drawItinerary(_ sender: UISegmentedControl) {
         switch (sender.selectedSegmentIndex) {
         case 0:
-            calculateSegmentDirections(.Walking)
+            calculateSegmentDirections(.walking)
         case 1:
-            calculateSegmentDirections(.Automobile)
+            calculateSegmentDirections(.automobile)
         default:
             break
         }
@@ -71,22 +71,22 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
         super.viewDidLoad()
         locationManager.delegate = self
         mapView.delegate = self
-        segmentedBar.hidden = true
+        segmentedBar.isHidden = true
         toggleInfos()
         initLocationManager()
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        if let vc = segue.destinationViewController as? StepsTableViewController where segue.identifier == "stepsSegue" {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if let vc = segue.destination as? StepsTableViewController, segue.identifier == "stepsSegue" {
             print("stepsSegue")
             vc.steps = steps
         }
     }
     
     func toggleInfos() {
-        distanceLabel.hidden = !distanceLabel.hidden
-        timeLabel.hidden = !timeLabel.hidden
-        stepsButton.hidden = !stepsButton.hidden
+        distanceLabel.isHidden = !distanceLabel.isHidden
+        timeLabel.isHidden = !timeLabel.isHidden
+        stepsButton.isHidden = !stepsButton.isHidden
     }
     
     func resetItinerary() {
@@ -100,7 +100,7 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
         }
     }
     
-    func constructPoint(title: String, coordinates: CLLocationCoordinate2D) -> MKPointAnnotation {
+    func constructPoint(_ title: String, coordinates: CLLocationCoordinate2D) -> MKPointAnnotation {
         let point = MKPointAnnotation()
         
         point.coordinate = coordinates
@@ -138,11 +138,11 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
         }
     }
 
-    func calculateSegmentDirections(transportType: MKDirectionsTransportType) {
+    func calculateSegmentDirections(_ transportType: MKDirectionsTransportType) {
         print("calculateSegmentDirections")
         self.transportType = transportType
 
-        if let start = startTextField.text where start != "" {
+        if let start = startTextField.text, start != "" {
             print("Get source location")
             getLocation(fromString: start, isDestination: false, zoom: false)
         } else {
@@ -153,8 +153,8 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
         }
     }
     
-    func getRoutes(srcCoordinates: CLLocationCoordinate2D) {
-        if let dest = destination, tt = transportType {
+    func getRoutes(_ srcCoordinates: CLLocationCoordinate2D) {
+        if let dest = destination, let tt = transportType {
             let request = MKDirectionsRequest()
             let s = MKMapItem(placemark: MKPlacemark(coordinate: srcCoordinates, addressDictionary: nil))
             let d = MKMapItem(placemark: MKPlacemark(coordinate: dest.coordinate, addressDictionary: nil))
@@ -165,8 +165,8 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
             request.transportType = tt
             
             let directions = MKDirections(request: request)
-            directions.calculateDirectionsWithCompletionHandler {
-                (response: MKDirectionsResponse?, error: NSError?) in
+            directions.calculate {
+                (response: MKDirectionsResponse?, error: Error?) in
                 if let routeResponse = response?.routes {
                     print(routeResponse)
                     self.mapView.removeOverlays(self.mapView.overlays)
@@ -174,50 +174,50 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
                 } else if let err = error {
                     print(err)
                 }
-            }
+            } 
         }
     }
     
-    func showRoutes(routes: [MKRoute]) {
+    func showRoutes(_ routes: [MKRoute]) {
         if !routes.isEmpty {
             let route = routes[0]
     
             print("Show routes")
             steps = route.steps
-            distanceLabel.hidden = false
+            distanceLabel.isHidden = false
             distanceLabel.text = String(route.distance / 1000) + " km"
-            timeLabel.hidden = false
-            stepsButton.hidden = false
+            timeLabel.isHidden = false
+            stepsButton.isHidden = false
             timeLabel.text = stringFromTimeInterval(route.expectedTravelTime) as String
             plotPolyline(route)
         }
     }
     
-    func plotPolyline(route: MKRoute) {
-        mapView.addOverlay(route.polyline)
+    func plotPolyline(_ route: MKRoute) {
+        mapView.add(route.polyline)
         mapView.setVisibleMapRect(route.polyline.boundingMapRect,
                                   edgePadding: UIEdgeInsetsMake(25.0, 25.0, 25.0, 25.0),
                                   animated: false)
     }
     
-    func mapView(mapView: MKMapView, rendererForOverlay overlay: MKOverlay) -> MKOverlayRenderer {
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         let polylineRenderer = MKPolylineRenderer(overlay: overlay)
 
         if (overlay is MKPolyline) {
-            polylineRenderer.strokeColor = UIColor.blueColor().colorWithAlphaComponent(0.75)
+            polylineRenderer.strokeColor = UIColor.blue.withAlphaComponent(0.75)
             polylineRenderer.lineWidth = 3
         }
 
         return polylineRenderer
     }
     
-    func locationManager(manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if locations.count > 0 {
             zoomToRegion(locations[0].coordinate)
         }
     }
     
-    func zoomToRegion(coordinates: CLLocationCoordinate2D) {
+    func zoomToRegion(_ coordinates: CLLocationCoordinate2D) {
         let region = MKCoordinateRegionMakeWithDistance(coordinates, 1000.0, 1000.0)
 
         mapView.setRegion(region, animated: true)
@@ -233,7 +233,7 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
         }
     }
 
-    func stringFromTimeInterval(interval: NSTimeInterval) -> NSString {
+    func stringFromTimeInterval(_ interval: TimeInterval) -> NSString {
         let ti = NSInteger(interval)
         let minutes = (ti / 60) % 60
         let hours = (ti / 3600)
